@@ -32,6 +32,15 @@
 
 using namespace std::placeholders;
 
+double fast_time = 0;
+double naiv_time = 0;
+int index_t = 0;
+
+double Elapsed() {
+    timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return ts.tv_sec + ts.tv_nsec * 1e-9;
+}
 // Benchmarking and display functions
 template<typename T>
 void display_csv(T array[], int size) {
@@ -67,7 +76,12 @@ binheap* time_func_csv(binheap_scan_func func, int bh_size,
 		binheap* bh_oracle) {
 	unsigned long us_time;
 	binheap* ret = time_func_binheap(func, bh_size, bh_oracle, repeat, us_time);
-	std::cout << us_time;
+	//std::cout << us_time;
+    if (index_t++ % 2 == 0) {
+        naiv_time += us_time;
+    } else {
+        fast_time += us_time;
+    }
 	std::cout.flush();
 	return ret;
 }
@@ -351,25 +365,26 @@ void process_query_vectors(cmdargs& args, partition_data& part,
 		Counters::quant_bound = 0;
 
 		//
-		std::cout << query.ids[i] << "," << part.id << "," << part.n << ","
-				<< args.bh_size << "," << part.keep << ",";
+		//std::cout << query.ids[i] << "," << part.id << "," << part.n << ","
+		//		<< args.bh_size << "," << part.keep << ",";
 
 		// Normal PQ Scan
-		pq_params pqp { 8, 8 };
+//		pq_params pqp { 8, 8 };
 		binheap* bh_oracle = nullptr;
-		bh_oracle = args.bench_func(
-				std::bind(scan_bh,
-						reinterpret_cast<const char*>(part.partition.get()),
-						dist_table, part.n, pqp, _1), args.bh_size, bh_oracle);
-		std::cout << ",";
+	//	bh_oracle = args.bench_func(
+	//			std::bind(scan_bh,
+	//					reinterpret_cast<const char*>(part.partition.get()),
+	//					dist_table, part.n, pqp, _1), args.bh_size, bh_oracle);
+		//std::cout << ",";
 		// Fast PQ Scan
 		args.bench_func(
 				std::bind(scan_partition_1, part.laidout_partition.buf.get(),
 						part.permuted_labels.get(), dist_table, _1),
 				args.bh_size, bh_oracle);
 
-		std::cout << "," << Counters::total_scan << "," << Counters::quant_bound
-				<< std::endl;
+		//std::cout << "," << Counters::total_scan << "," << Counters::quant_bound
+		//		<< std::endl;
+        //cout << endl;
 	}
 }
 
@@ -385,5 +400,13 @@ int main(int argc, char* argv[]) {
 	query_set query;
 	load_query_vectors(args, query);
 	std::cerr << "Loaded " << query.vectors.size() / query.dimension << " query vectors" << std::endl;
+
+    double t0 = Elapsed();
+
 	process_query_vectors(args, part, query);
+
+    cout << (Elapsed() - t0) / (query.vectors.size()/query.dimension) * 1000 << " [msec/query] " << endl;
+    cout << naiv_time / (index_t/2) / 1000<< " [msec/query] " << endl;
+    cout << fast_time / (index_t/2) / 1000<< " [msec/query] " << endl;
+    cout << index_t << endl;
 }
