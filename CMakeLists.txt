@@ -1,3 +1,4 @@
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "../build-pq-fast-scan")
 cmake_minimum_required(VERSION 2.8)
 project(pq-fast-scan)
 
@@ -22,7 +23,7 @@ feature_summary(WHAT ALL)
 
 # Set GCC Flags
 set(GCC_FLAGS
-"-g -ggdb -O3 -m64 -march=native -ffast-math -Wall -Werror")
+"-g -ggdb -O3 -m64 -march=native -ffast-math -Wall -Werror -L/home/rw545/lib/perfmon2-libpfm4/lib")
 
 execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
                 OUTPUT_VARIABLE GCC_VERSION)
@@ -39,7 +40,7 @@ set(CMAKE_CXX_FLAGS "-std=c++11 ${GCC_FLAGS}")
 # Configure options
 configure_file("${PROJECT_SOURCE_DIR}/config.h.in"
     "${PROJECT_BINARY_DIR}/config.h")
-include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}")
+include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}" "/home/rw545/lib/perfmon2-libpfm4/include")
 
 # Libraries
 set(LINK_LIBS pfm)
